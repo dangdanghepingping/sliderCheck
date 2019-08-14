@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <title>Document</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+
+      rotate: 90deg
+    }
+
+
+
+   
+  </style>
+</head>
+
+<body>
+ 
+
+  <script>
+
+
+    class SliderConf {
+      /**
+      wrapper:在哪里插入,类型是一个元素;
+      */
+      constructor(wrapper, width, height, imgUrl) {
+        this.wrapper = wrapper
+        this.width = width + '';
+        this.height = height + '';
+        this.url = imgUrl;
+
+      }
+      createWrapper() {
+        // debugger
+        if (this.wrapper instanceof Element == false) {
+          throw new Error('the first paramas expects a element')
+        } if (this.width < 100 || this.height < 100) {
+          throw new Error('paramas width and height must greater than 100')
+
+        } else {
+          var html = ` <canvas width=${this.width} height=${this.height} class="canvas"></canvas>
+                       <canvas width=${this.width} height=${this.height} class="block"></canvas>
+                       <div class="slider">
+                         <p class="pipe"></p>
+                         <div class="sliderBlock"></div>
+                       </div>
+                       `;
+
+          var outer = document.createElement('div');
+          outer.style.width = this.width + 'px';
+          outer.style.margin = '0 auto'
+          outer.style.padding = '5px';
+          outer.style.border = '1px solid';
+          outer.style.position = 'relative'
+          outer.innerHTML = html;
+          document.body.appendChild(outer)
+          this.canvas = outer.getElementsByClassName('canvas')[0];
+          this.block = outer.getElementsByClassName('block')[0];
+          this.block.style.position = 'absolute';
+          this.block.style.top = '5px';//此处是outer的padding + canvas的border + outer.border
+          this.block.style.left = - (this.width - 80 - 30) + 'px'//让block距离左边30px;
+          var slider = outer.getElementsByClassName('slider')[0];
+          var pipe = outer.getElementsByClassName('pipe')[0];
+          var sb = outer.getElementsByClassName('sliderBlock')[0];
+          slider.style.position = 'relative'
+          slider.style.margin = '20px 0 20px 0'
+
+          pipe.style.height = '2px';
+          pipe.style.background = 'green'
+          pipe.style.borderRadius = '3px'
+
+          sb.style.height = '20px'
+          sb.style.width = '10px'
+          sb.style.background = 'blue'
+          sb.style.borderRadius = '3px'
+          sb.style.position = 'absolute';
+          sb.style.top = '-6px';
+          var blockBase = 50 / 2 - 10 / 2 + 30;
+          sb.style.left = blockBase + 'px';
+          this.sb = sb;
+          var that = this;
+          this.flage = true
+          sb.onmousedown = function (event) {
+            if (that.flage) {
+              document.onmousemove = null
+              var e = event || window.event;
+              var x = e.clientX;
+              var cha = 0;
+              var baseLeft = this.offsetLeft;
+              var canvaseBaseLeft = that.block.offsetLeft;
+              document.onmousemove = (event) => {
+                var e1 = event || window.event;
+                var x1 = e1.clientX;
+                cha = x1 - x;
+                var newLeft = baseLeft + cha;
+                var newCanvaseLeft = canvaseBaseLeft + cha;
+                if (newLeft < 50) {
+                  newLeft = 50;
+                  newCanvaseLeft = -(that.width - 110);
+                } else if (newLeft > that.width - 30) {
+                  var max = that.block.offsetLeft;
+                  newLeft = that.width - 30;
+                  newCanvaseLeft = max;
+                }
+                this.style.left = newLeft + 'px';
+                that.block.style.left = newCanvaseLeft + 'px';
+                document.onmouseup = () => {
+                  document.onmousemove = null;
+                  that.check();
+                }
+              }
+            }
+          }
+        }
+      }
+      check() {
+        if (Math.abs(this.block.offsetLeft - 6) < 2) {
+          console.log(true);
+          alert('真厉害')
+        } else {
+          alert('没有成功偶');
+          this.block.style.left = - (this.width - 80 - 30) + 'px';
+          this.sb.style.left = 50 / 2 - 10 / 2 + 30 + 'px';
+        }
+document.onmouseup = null
+      }
+      drawImage() { //在wrapper上画图
+        // debugger
+        var img = document.createElement('img')
+        img.onload = () => {
+          this.blockCtx.drawImage(img, 0, 0, this.width, this.height)
+          this.canvasCtx.drawImage(img, 0, 0, this.width, this.height)
+        };
+        img.src = this.url;
+      }
+      drawPath(ctx) {
+        var x = this.width - 50 - 30;//让block距离最右侧30px;
+        var y = 30;
+        ctx.beginPath();
+
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 15, 30)
+        ctx.arc(x + 25, y, 10, -Math.PI, 0, false)
+        ctx.lineTo(x + 50, y);
+        ctx.lineTo(x + 50, y + 50);
+        ctx.lineTo(x, y + 50)
+        ctx.lineTo(x, y + 35)
+        ctx.arc(x, y + 25, 10, Math.PI / 2, Math.PI * 3 / 2, true)
+        ctx.closePath()
+        ctx.globalCompositeOperation = "destination-atop"//ok
+      }
+      clipImage(ctx) {
+        // debugger
+        if (ctx == this.canvasCtx) { //裁剪小图block
+          ctx.fillStyle = 'white'
+          this.drawPath(ctx)
+          ctx.fill()
+        } else {//是wrapper,
+          this.drawPath(ctx)
+          ctx.strokeStyle = 'white'
+          ctx.stroke()
+          ctx.clip()
+        }
+      }
+
+      draw() { //分别在wrapper 上画上两个图片
+        //  debugger
+        this.blockCtx = this.block.getContext('2d');
+        this.canvasCtx = this.canvas.getContext('2d');
+        this.drawImage();
+        this.clipImage(this.canvasCtx);
+        this.clipImage(this.blockCtx);
+      }
+      init() {
+        this.createWrapper();//生成元素
+        this.draw();//绘制图片
+      }
+    }
+
+    var sc = new SliderConf(document.body, 400, 300, '2.jpg')
+    sc.init()
+
+
+  </script>
+</body>
+
+</html>
